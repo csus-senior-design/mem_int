@@ -12,11 +12,11 @@
 module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
                   MEM_DEPTH = 1 << ADDR_WIDTH, BE = 4'h7)
   (
-    input [ADDR_WIDTH - 1:0] wr_addr, rd_addr,
-    input [DATA_WIDTH - 1:0] wr_data,
-    input CLOCK_125_p, wr_en, rd_en, reset,
-    output reg rd_data_valid, local_cal_success_reg,
-    output reg [DATA_WIDTH - 1:0] rd_data,
+//    input [ADDR_WIDTH - 1:0] wr_addr, rd_addr,
+//    input [DATA_WIDTH - 1:0] wr_data,
+    input CLOCK_125_p,// wr_en, rd_en, reset,
+//    output reg rd_data_valid,
+//    output reg [DATA_WIDTH - 1:0] rd_data,
 		output wire [9:0]  mem_ca,                   //       memory.mem_ca
 		output wire [0:0]  mem_ck,                   //             .mem_ck
 		output wire [0:0]  mem_ck_n,                 //             .mem_ck_n
@@ -48,20 +48,37 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
 	wire         rst_controller_001_reset_out_reset;
 	wire         rst_controller_002_reset_out_reset;
   
-  
   wire local_cal_fail, local_cal_success, local_init_done;
-  reg global_reset_n, soft_reset_n, rst_cnt;
+  reg global_reset_n, soft_reset_n;
+  
+  /* Declare source signals */
+  reg [ADDR_WIDTH - 1:0] wr_addr, rd_addr;
+  reg [DATA_WIDTH - 1:0] wr_data;
+  reg wr_en, rd_en, reset;
+  
+  /* Declare probe signals */
+  reg local_cal_fail_reg, local_cal_success_reg, local_init_done_reg,
+      rd_data_valid;
+  reg [DATA_WIDTH - 1:0] rd_data;
   reg [1:0] curr_state, next_state;
-  //reg [31:0] cnt;
-    
-  /*
-  always @(posedge CLOCK_125_p)
-    if (rst_cnt == `ASSERT_L || reset == `ASSERT_L)
-      cnt <= 32'h0;
-    else
-      cnt <= cnt + 32'h1;
-  */
+  
+  /* Instantiate In-System Sources and Probes */
+  ISSP ISSP_inst(
+    .source_clk(CLOCK_125_p),
+    .source({wr_addr, rd_addr, wr_data, wr_en, rd_en, reset}),
+    .probe({local_cal_fail_reg, local_cal_success_reg, local_init_done_reg,
+      rd_data_valid, rd_data, curr_state, next_state})
+  );
+  
+  /* Flop the probe signals */
+  always @(posedge CLOCK_125_p) begin
+    local_cal_success_reg <= local_cal_success;
+    local_cal_fail_reg <= local_cal_fail;
+    local_init_done_reg <= local_init_done;
+    rd_data_valid <= avl_rdata_valid_0;
+  end
       
+  /* Begin interface logic */
   always @(posedge CLOCK_125_p) begin
     if (reset == `ASSERT_L) begin
       global_reset_n <= `ASSERT_L;
@@ -75,18 +92,18 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
       curr_state <= next_state;
       
     avl_addr_0 <= 29'hZ;
-    local_cal_success_reg <= local_cal_success;
-    rd_data_valid <= avl_rdata_valid_0;
     
     case (curr_state)
       INIT:   begin
                 global_reset_n <= `DEASSERT_L;
-                if (pll_locked_ddr == `ASSERT_H && pll_locked_int == `ASSERT_H) begin
+                if (pll_locked_ddr == `ASSERT_H &&
+                      pll_locked_int == `ASSERT_H) begin
                   soft_reset_n <= `DEASSERT_L;
                   next_state <= INIT;
                 end else
                   next_state <= INIT;
-                if (local_cal_success == `ASSERT_H && soft_reset_n == `DEASSERT_L)
+                if (local_cal_success == `ASSERT_H &&
+                      soft_reset_n == `DEASSERT_L)
                   next_state <= IDLE;
                 else
                   next_state <= INIT;
@@ -123,6 +140,7 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
   
   assign avl_be_0 = BE;
   
+  /* Begin IP instantiations */
 	LPDDR2x32 lpddr2x32_inst (
 		.pll_ref_clk                (CLOCK_125_p),                                    //        pll_ref_clk.clk
 		.global_reset_n             (global_reset_n),                                 //       global_reset.reset_n
