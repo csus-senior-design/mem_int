@@ -50,6 +50,7 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
   
   wire local_cal_fail, local_cal_success, local_init_done;
   reg global_reset_n, soft_reset_n;
+  reg [28:0] prev_wr_addr, prev_rd_addr;
   
   /* Declare source signals */
   reg [ADDR_WIDTH - 1:0] wr_addr, rd_addr;
@@ -115,10 +116,12 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
                   next_state <= IDLE;
                 else
                   next_state <= INIT;
+                prev_wr_addr <= 29'hZ;
               end
             
       IDLE:   begin
-                if (avl_ready_0 == `ASSERT_H && wr_en == `ASSERT_L)
+                if (avl_ready_0 == `ASSERT_H && wr_en == `ASSERT_L
+                      && prev_wr_addr != wr_addr)
                   next_state <= WRITE;
                 else if (avl_ready_0 == `ASSERT_H && rd_en == `ASSERT_L)
                   next_state <= READ;
@@ -130,6 +133,7 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
                 if (avl_ready_0 == `ASSERT_H && wr_en == `ASSERT_L) begin
                   avl_write_req_0 <= `ASSERT_H;
                   avl_addr_0 <= wr_addr;
+                  prev_wr_addr <= wr_addr;
                 end
                 next_state <= IDLE;
               end
