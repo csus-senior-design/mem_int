@@ -73,7 +73,7 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
   /* Instantiate extra PLL */
   PLL pll_inst(
     .refclk(CLOCK_125_p),
-    .rst(reset),
+    .rst(1'b0),
 		.outclk_0(pll0_pll_clk_clk),
 		.locked(pll_locked_int)
 	);
