@@ -124,7 +124,8 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
                 if (avl_ready_0 == `ASSERT_H && wr_en == `ASSERT_L
                       && prev_wr_addr != wr_addr)
                   next_state <= WRITE;
-                else if (avl_ready_0 == `ASSERT_H && rd_en == `ASSERT_L)
+                else if (avl_ready_0 == `ASSERT_H && rd_en == `ASSERT_L 
+                          && prev_rd_addr != rd_addr)
                   next_state <= READ;
                 else
                   next_state <= IDLE;
@@ -140,8 +141,7 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
               end
       
       READ:   begin
-                if (avl_ready_0 == `ASSERT_H && rd_en == `ASSERT_L
-                      && prev_rd_addr <= rd_addr) begin
+                if (avl_ready_0 == `ASSERT_H && rd_en == `ASSERT_L) begin
                   avl_read_req_0 <= `ASSERT_H;
                   avl_addr_0 <= rd_addr;
                   next_state <= READ;
