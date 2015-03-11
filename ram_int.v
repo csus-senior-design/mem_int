@@ -67,7 +67,7 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
   ISSP ISSP_inst(
     .source_clk(pll0_pll_clk_clk),
     .source({wr_addr, rd_addr, wr_data, wr_en, rd_en, reset}),
-    .probe({local_cal_fail_reg, local_cal_success_reg, local_init_done_reg,
+    .probe({prev_wr_addr, local_cal_fail_reg, local_cal_success_reg, local_init_done_reg,
       rd_data_valid, rd_data, curr_state, next_state})
   );
   
