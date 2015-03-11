@@ -15,7 +15,8 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
     input [ADDR_WIDTH - 1:0] wr_addr, rd_addr,
     input [DATA_WIDTH - 1:0] wr_data,
     input CLOCK_125_p, wr_en, rd_en, reset,
-    output reg [DATA_WIDTH - 1:0] rd_data
+    output reg rd_data_valid, local_cal_success_reg,
+    output reg [DATA_WIDTH - 1:0] rd_data,
 		output wire [9:0]  mem_ca,                   //       memory.mem_ca
 		output wire [0:0]  mem_ck,                   //             .mem_ck
 		output wire [0:0]  mem_ck_n,                 //             .mem_ck_n
@@ -31,12 +32,12 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
   /* Define the required states. */
   parameter INIT = 2'h0, IDLE = 2'h1, WRITE = 2'h2, READ = 2'h3;
 
-  /* These wires are necessary for the hard memory controller IP. */
+  /* Make necessary declarations for the hard memory controller IP. */
   wire         pll_locked_ddr, pll_locked_int;
   wire         pll0_pll_clk_clk;
 	wire         avl_burstbegin_0;
 	wire         avl_ready_0;
-	wire  [28:0] avl_addr_0;
+	reg   [28:0] avl_addr_0;
 	wire         avl_read_req_0;
 	wire   [3:0] avl_be_0;
 	wire         avl_rdata_valid_0;
@@ -46,6 +47,7 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
 	wire         pll0_reset_out_reset;
 	wire         rst_controller_001_reset_out_reset;
 	wire         rst_controller_002_reset_out_reset;
+  
   
   wire local_cal_fail, local_cal_success, local_init_done;
   reg global_reset_n, soft_reset_n, rst_cnt;
@@ -65,9 +67,17 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
       global_reset_n <= `ASSERT_L;
       soft_reset_n <= `ASSERT_L;
       curr_state <= INIT;
+      avl_burstbegin_0 <= `DEASSERT_H;
+      avl_size_0 <= 3'h1;
+      avl_read_req_0 <= `DEASSERT_H;
+      avl_write_req_0 <= `DEASSERT_H;
     end else
       curr_state <= next_state;
       
+    avl_addr_0 <= 29'hZ;
+    local_cal_success_reg <= local_cal_success;
+    rd_data_valid <= avl_rdata_valid_0;
+    
     case (curr_state)
       INIT:   begin
                 global_reset_n <= `DEASSERT_L;
@@ -92,14 +102,26 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
               end
       
       WRITE:  begin
-      
+                if (avl_ready_0 == `ASSERT_H && wr_en == `ASSERT_L) begin
+                  avl_write_req_0 <= `ASSERT_H;
+                  avl_addr_0 <= wr_addr;
+                end
+                next_state <= IDLE;
               end
       
       READ:   begin
-      
+                if (avl_ready_0 == `ASSERT_H && rd_en == `ASSERT_L
+                      && avl_rdata_valid_0 != `ASSERT_H) begin
+                  avl_read_req_0 <= `ASSERT_H;
+                  avl_addr_0 <= rd_addr;
+                  next_state <= READ;
+                end else if (avl_rdata_valid_0 == `ASSERT_H)
+                  next_state <= IDLE;
               end
     endcase
   end
+  
+  assign avl_be_0 = BE;
   
 	LPDDR2x32 lpddr2x32_inst (
 		.pll_ref_clk                (CLOCK_125_p),                                    //        pll_ref_clk.clk
