@@ -101,8 +101,6 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
       curr_state <= next_state;
       
     avl_addr_0 <= 29'hZ;
-    prev_wr_addr <= 29'hZ;
-    prev_rd_addr <= 29'hZ;
     
     case (curr_state)
       INIT:   begin
@@ -121,6 +119,8 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
               end
             
       IDLE:   begin
+                avl_write_req_0 <= `DEASSERT_H;
+                avl_read_req_0 <= `DEASSERT_H;
                 if (avl_ready_0 == `ASSERT_H && wr_en == `ASSERT_L
                       && prev_wr_addr != wr_addr)
                   next_state <= WRITE;
