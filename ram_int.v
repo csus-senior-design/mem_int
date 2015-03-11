@@ -26,7 +26,7 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
 		inout  wire [31:0] mem_dq,                   //             .mem_dq
 		inout  wire [3:0]  mem_dqs,                  //             .mem_dqs
 		inout  wire [3:0]  mem_dqs_n,                //             .mem_dqs_n
-		input  wire        oct_rzqin,                //          oct.rzqin
+		input  wire        oct_rzqin                 //          oct.rzqin
   );
   
   /* Define the required states. */
@@ -35,14 +35,14 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
   /* Make necessary declarations for the hard memory controller IP. */
   wire         pll_locked_ddr, pll_locked_int;
   wire         pll0_pll_clk_clk;
-	wire         avl_burstbegin_0;
+	reg          avl_burstbegin_0;
 	wire         avl_ready_0;
 	reg   [28:0] avl_addr_0;
-	wire         avl_read_req_0;
+	reg          avl_read_req_0;
 	wire   [3:0] avl_be_0;
 	wire         avl_rdata_valid_0;
-	wire         avl_write_req_0;
-	wire   [2:0] avl_size_0;
+	reg          avl_write_req_0;
+	reg    [2:0] avl_size_0;
 	wire         rst_controller_reset_out_reset;
 	wire         pll0_reset_out_reset;
 	wire         rst_controller_001_reset_out_reset;
@@ -69,6 +69,14 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
     .probe({local_cal_fail_reg, local_cal_success_reg, local_init_done_reg,
       rd_data_valid, rd_data, curr_state, next_state})
   );
+  
+  /* Instantiate extra PLL */
+  PLL pll_inst(
+    .refclk(CLOCK_125_p),
+    .rst(global_reset_n),
+		.outclk_0(pll0_pll_clk_clk),
+		.locked(pll_locked_int)
+	);
   
   /* Flop the probe signals */
   always @(posedge CLOCK_125_p) begin
@@ -190,25 +198,8 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
 		.pll_avl_phy_clk            ()                                                //                   .pll_avl_phy_clk
 	);
   
-	altera_mem_if_single_clock_pll #(
-		.DEVICE_FAMILY    ("Cyclone V"),
-		.REF_CLK_FREQ_STR ("125.0 MHz"),
-		.REF_CLK_PS       ("8000.0"),
-		.PLL_CLK_FREQ_STR ("125.0 MHz"),
-		.PLL_CLK_PHASE_PS (0),
-		.PLL_CLK_MULT     (0),
-		.PLL_CLK_DIV      (0),
-		.USE_GENERIC_PLL  (1)
-	) pll0 (
-		.pll_ref_clk    (CLOCK_125_p),          //    pll_ref_clk.clk
-		.pll_clk        (pll0_pll_clk_clk),     //        pll_clk.clk
-		.global_reset_n (global_reset_n),       // global_reset_n.reset_n
-		.pll_locked     (pll_locked_int),       //     pll_locked.pll_locked
-		.reset_out_n    (pll0_reset_out_reset)  //      reset_out.reset_n
-	);
-  
 	altera_reset_controller #(
-		.NUM_RESET_INPUTS          (3),
+		.NUM_RESET_INPUTS          (2),
 		.OUTPUT_RESET_SYNC_EDGES   ("none"),
 		.SYNC_DEPTH                (2),
 		.RESET_REQUEST_PRESENT     (0),
@@ -233,9 +224,8 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
 		.USE_RESET_REQUEST_IN15    (0),
 		.ADAPT_RESET_REQUEST       (0)
 	) rst_controller (
-		.reset_in0      (~pll0_reset_out_reset),          // reset_in0.reset
-		.reset_in1      (~global_reset_n),                // reset_in1.reset
-		.reset_in2      (~soft_reset_n),                  // reset_in2.reset
+		.reset_in0      (~global_reset_n),          // reset_in0.reset
+		.reset_in1      (~soft_reset_n),                // reset_in1.reset
 		.clk            (),                               //       clk.clk
 		.reset_out      (rst_controller_reset_out_reset), // reset_out.reset
 		.reset_req      (),                               // (terminated)
@@ -271,7 +261,7 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
 	);
 
 	altera_reset_controller #(
-		.NUM_RESET_INPUTS          (3),
+		.NUM_RESET_INPUTS          (2),
 		.OUTPUT_RESET_SYNC_EDGES   ("none"),
 		.SYNC_DEPTH                (2),
 		.RESET_REQUEST_PRESENT     (0),
@@ -296,9 +286,8 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
 		.USE_RESET_REQUEST_IN15    (0),
 		.ADAPT_RESET_REQUEST       (0)
 	) rst_controller_001 (
-		.reset_in0      (~pll0_reset_out_reset),              // reset_in0.reset
-		.reset_in1      (~global_reset_n),                    // reset_in1.reset
-		.reset_in2      (~soft_reset_n),                      // reset_in2.reset
+		.reset_in0      (~global_reset_n),          // reset_in0.reset
+		.reset_in1      (~soft_reset_n),                // reset_in1.reset
 		.clk            (),                                   //       clk.clk
 		.reset_out      (rst_controller_001_reset_out_reset), // reset_out.reset
 		.reset_req      (),                                   // (terminated)
@@ -334,7 +323,7 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
 	);
 
 	altera_reset_controller #(
-		.NUM_RESET_INPUTS          (3),
+		.NUM_RESET_INPUTS          (2),
 		.OUTPUT_RESET_SYNC_EDGES   ("none"),
 		.SYNC_DEPTH                (2),
 		.RESET_REQUEST_PRESENT     (0),
@@ -359,9 +348,8 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
 		.USE_RESET_REQUEST_IN15    (0),
 		.ADAPT_RESET_REQUEST       (0)
 	) rst_controller_002 (
-		.reset_in0      (~pll0_reset_out_reset),              // reset_in0.reset
-		.reset_in1      (~global_reset_n),                    // reset_in1.reset
-		.reset_in2      (~soft_reset_n),                      // reset_in2.reset
+		.reset_in0      (~global_reset_n),          // reset_in0.reset
+		.reset_in1      (~soft_reset_n),                // reset_in1.reset
 		.clk            (),                                   //       clk.clk
 		.reset_out      (rst_controller_002_reset_out_reset), // reset_out.reset
 		.reset_req      (),                                   // (terminated)
