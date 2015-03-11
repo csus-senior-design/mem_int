@@ -87,7 +87,7 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
   end
       
   /* Begin interface logic */
-  always @(posedge CLOCK_125_p) begin
+  always @(posedge pll0_pll_clk_clk) begin
     if (reset == `ASSERT_L) begin
       global_reset_n <= `ASSERT_L;
       soft_reset_n <= `ASSERT_L;
