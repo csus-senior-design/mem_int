@@ -64,7 +64,7 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
   
   /* Instantiate In-System Sources and Probes */
   ISSP ISSP_inst(
-    .source_clk(CLOCK_125_p),
+    .source_clk(pll0_pll_clk_clk),
     .source({wr_addr, rd_addr, wr_data, wr_en, rd_en, reset}),
     .probe({local_cal_fail_reg, local_cal_success_reg, local_init_done_reg,
       rd_data_valid, rd_data, curr_state, next_state})
@@ -79,7 +79,7 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
 	);
   
   /* Flop the probe signals */
-  always @(posedge CLOCK_125_p) begin
+  always @(posedge pll0_pll_clk_clk) begin
     local_cal_success_reg <= local_cal_success;
     local_cal_fail_reg <= local_cal_fail;
     local_init_done_reg <= local_init_done;
