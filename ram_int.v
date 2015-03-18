@@ -97,6 +97,8 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
       avl_size_0 <= 3'h1;
       avl_read_req_0 <= `DEASSERT_H;
       avl_write_req_0 <= `DEASSERT_H;
+      prev_rd_addr <= {ADDR_WIDTH{1'h0}};
+      prev_wr_addr <= {ADDR_WIDTH{1'h0}};
     end else
       curr_state <= next_state;
       
