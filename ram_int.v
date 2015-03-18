@@ -124,17 +124,18 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
                 avl_write_req_0 <= `DEASSERT_H;
                 avl_read_req_0 <= `DEASSERT_H;
                 if (avl_ready_0 == `ASSERT_H && wr_en == `ASSERT_L
-                      && prev_wr_addr != wr_addr)
+                      && prev_wr_addr != wr_addr && rd_en == `DEASSERT_L)
                   next_state <= WRITE;
                 else if (avl_ready_0 == `ASSERT_H && rd_en == `ASSERT_L 
-                          && prev_rd_addr != rd_addr)
+                          && prev_rd_addr != rd_addr && wr_en == `DEASSERT_L)
                   next_state <= READ;
                 else
                   next_state <= IDLE;
               end
       
       WRITE:  begin
-                if (avl_ready_0 == `ASSERT_H && wr_en == `ASSERT_L) begin
+                if (avl_ready_0 == `ASSERT_H && wr_en == `ASSERT_L
+                       && rd_en == `DEASSERT_L) begin
                   avl_write_req_0 <= `ASSERT_H;
                   avl_addr_0 <= wr_addr;
                   prev_wr_addr <= avl_addr_0;
@@ -143,10 +144,10 @@ module ram_int #(parameter DATA_WIDTH = 32, ADDR_WIDTH = 29,
               end
       
       READ:   begin
-                if (avl_ready_0 == `ASSERT_H && rd_en == `ASSERT_L) begin
+                if (avl_ready_0 == `ASSERT_H && rd_en == `ASSERT_L
+                       && wr_en == `DEASSERT_L) begin
                   avl_read_req_0 <= `ASSERT_H;
                   avl_addr_0 <= rd_addr;
-                  next_state <= READ;
                   prev_rd_addr <= avl_addr_0;
                 end
                   next_state <= IDLE;
